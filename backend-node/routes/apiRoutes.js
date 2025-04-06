@@ -4,7 +4,8 @@ const path = require('path');
 const fs = require('fs/promises'); // For async file operations
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 console.log(process.env);
-const multibaasClient = require('../multibaasClient');
+// const multibaasClient = require('../multibaasClient'); // REMOVED THIS LINE
+// const { mintNFT } = multibaasClient; // REMOVED THIS LINE
 // We will use dynamic import inside an async function for ipfs-http-client
 // const { create } = require('ipfs-http-client'); // Remove this line
 
@@ -157,55 +158,32 @@ router.post('/prepare-nft-data', async (req, res) => { // Renamed endpoint
 });
 
 // NEW Endpoint: POST /api/execute-mint
-// router.post('/execute-mint', async (req, res) => {
-//     console.log("Received request for /api/execute-mint");
-//     const { recipientAddress, tokenURI } = req.body;
+router.post('/execute-mint', async (req, res) => {
+    console.log("Received request for /api/execute-mint");
+    const { recipientAddress, tokenURI } = req.body;
 
-//     if (!recipientAddress || !tokenURI) {
-//         console.log("Missing recipientAddress or tokenURI");
-//         return res.status(400).json({ success: false, message: 'Recipient address and token URI are required.' });
-//     }
+    if (!recipientAddress || !tokenURI) {
+        console.log("Missing recipientAddress or tokenURI");
+        return res.status(400).json({ success: false, message: 'Recipient address and token URI are required.' });
+    }
 
-//     console.log(`Attempting to mint NFT for ${recipientAddress} with URI ${tokenURI}`);
+    console.log(`Attempting to mint NFT for ${recipientAddress} with URI ${tokenURI}`);
 
-//     try {
-//         // Call the mintNFT function from the multibaasClient
-//         const mintResult = await mintNFT(recipientAddress, tokenURI);
-//         console.log("Minting result from MultiBaas:", mintResult);
+    try {
+        // TEMPORARY RESPONSE SINCE MULTIBAAS IS REMOVED FROM THIS SERVICE
+        console.warn("[/api/execute-mint] Endpoint logic is disabled as MultiBaas client was removed.");
+        res.status(501).json({ success: false, message: 'Minting endpoint currently disabled in this service.' });
 
-//         // Check if the result indicates success (adjust based on actual mintNFT response)
-//         // Assuming mintResult contains transaction details or a success flag
-//         if (mintResult && mintResult.tx) { // Example check, adjust as needed
-//             console.log(`Successfully initiated minting transaction: ${mintResult.tx.hash}`);
-//             res.json({ 
-//                 success: true, 
-//                 message: 'NFT minting initiated successfully.', 
-//                 transactionHash: mintResult.tx.hash, // Return transaction hash
-//                 details: mintResult // Optionally return full details
-//             });
-//         } else {
-//             // Handle cases where mintNFT might resolve but not represent a successful transaction start
-//             console.error("Minting process did not return expected success indicator.", mintResult);
-//             res.status(500).json({ success: false, message: 'Minting process failed or did not return expected result.', details: mintResult });
-//         }
-//     } catch (error) {
-//         console.error('Error calling mintNFT:', error.response ? error.response.data : error.message);
+    } catch (error) {
+        console.error('Error during disabled /api/execute-mint:', error.message); // Log generic error
         
-//         // Check for MultiBaas specific errors (like 404)
-//         if (error.response && error.response.status === 404) {
-//             res.status(404).json({ 
-//                 success: false, 
-//                 message: 'MultiBaas API endpoint not found (404). Check configuration (Base URL, Contract Label).' 
-//             });
-//         } else {
-//             res.status(500).json({ 
-//                 success: false, 
-//                 message: 'Failed to execute minting.', 
-//                 error: error.response ? error.response.data : error.message 
-//             });
-//         }
-//     }
-// });
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to execute minting (endpoint disabled).', 
+            error: error.message // Return generic error message
+        });
+    }
+});
 
 // --- Helper function for calling Python AI script --- (Keep for now, but unused by prepare endpoint)
 async function callAiSimulator(params) {

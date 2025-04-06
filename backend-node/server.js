@@ -6,7 +6,7 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 const apiRoutes = require('./routes/apiRoutes');
-// const multibaasClient = require('./multibaasClient');
+// const multibaasClient = require('./multibaasClient'); // REMOVED: Not used in this service
 
 // Temporary in-memory stores
 app.locals.verificationStatus = {}; // Stores status keyed by userId (or nullifier)
@@ -103,10 +103,13 @@ app.post('/self/callback', async (req, res) => {
 
     // --- Real Verification Logic ---
     console.log('[Self Callback] Received REAL callback. Initializing SelfBackendVerifier...');
+    console.log('[Self Callback] DEBUG: Attempting to initialize SelfBackendVerifier...');
     const selfBackendVerifier = new SelfBackendVerifier(rpcUrl, scope);
-    console.log(`[Self Callback] Verifier initialized with RPC: ${rpcUrl}, Scope: ${scope}`);
+    console.log(`[Self Callback] DEBUG: Verifier initialized successfully with RPC: ${rpcUrl}, Scope: ${scope}`);
 
+    console.log('[Self Callback] DEBUG: Attempting to call selfBackendVerifier.verify...');
     result = await selfBackendVerifier.verify(proof, publicSignals);
+    console.log('[Self Callback] DEBUG: selfBackendVerifier.verify call completed.');
     console.log('[Self Callback] Verification result:', JSON.stringify(result, null, 2));
     // --- Real Verification Logic continues below ---
 
@@ -176,7 +179,9 @@ app.post('/self/callback', async (req, res) => {
     }
 
   } catch (error) {
-    console.error('[Self Callback] Error during Self callback verification process:', error);
+    console.error('[Self Callback] !!!!!!!!!! ERROR during Self callback verification process !!!!!!!!!!');
+    console.error('[Self Callback] Error Object:', error); // Log the full error object
+    console.error('[Self Callback] Error Stack:', error.stack); // Log the stack trace
     // Attempt to store error status if identifiers are available
     userId = userId || result?.nullifier || (await getUserIdentifier(publicSignals).catch(() => null)); // Best effort userId
     sessionId = sessionId || result?.cid || req.body.sessionId; // Best effort sessionId
@@ -197,9 +202,11 @@ app.post('/self/callback', async (req, res) => {
     // returning 500 here indicates a server-side processing failure beyond simple verification fail.
     res.status(500).send('Internal server error processing callback.');
   } finally {
+      console.log('[Self Callback] DEBUG: Entering finally block.');
       // Log final state regardless of outcome
-      console.log('[Self Callback] Final verification statuses map:', app.locals.verificationStatus);
-      console.log('[Self Callback] Final sessionId->userId map:', app.locals.sessionIdToUserIdMap);
+      console.log('[Self Callback] Final verification statuses map:', JSON.stringify(app.locals.verificationStatus, null, 2)); // Stringify for better readability
+      console.log('[Self Callback] Final sessionId->userId map:', JSON.stringify(app.locals.sessionIdToUserIdMap, null, 2)); // Stringify
+      console.log('[Self Callback] DEBUG: Exiting finally block.');
   }
 });
 
@@ -234,12 +241,8 @@ app.get('/self/status/:sessionId', (req, res) => {
 // --- Main API Routes ---
 app.use('/api', apiRoutes);
 
-// Start server WITHOUT MultiBaas connection test
+// Start server
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
-  // multibaasClient.testConnection().catch(err => {
-  //     console.error('Failed to connect to MultiBaas on startup:', err.message);
-  //     // Depending on requirements, you might want to exit the process
-  //     // process.exit(1);
-  // });
+  // Removed MultiBaas connection test as it's handled in a separate service.
 });
